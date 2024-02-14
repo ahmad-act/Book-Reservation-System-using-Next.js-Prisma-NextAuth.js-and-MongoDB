@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  image          String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  hashedPassword String?
+  phone          String?
+  addresses      Address[]
+
+  roleNum         Int?
+  userAccessLevel Int       @default(10)
+  userRole        UserRole? @relation(fields: [roleNum], references: [roleSerial])
+
+  sessions Session[]
+  accounts Account[]
+
+  bookReservations BookReservation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// schema.prisma
+
+model UserRole {
+  id                  String  @id @default(auto()) @map("_id") @db.ObjectId
+  roleName            String  @unique
+  roleSerial          Int     @unique
+  roleDescription         String?
+  userRoleAccessLevel Int     @default(10)
+
+  users User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  addressType String  @default("undefined")
+  street      String?
+  city        String?
+  state       String?
+  country     String?
+  postalCode  String?
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Eache ReservationDetal should keep unique book of a BookReservation, not multiple times for a book
+  @@unique([userId, addressType], name: "unique_user_addresstype")
+}
+
+model BookCategory {
+  id                      String     @id @default(auto()) @map("_id") @db.ObjectId
+  bookCategoryName        String     @unique
+  bookCategoryDescription String?
+  bookCategoryAccessLevel Int        @default(10)
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+  bookInfos               BookInfo[]
+}
+
+model BookInfo {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  bookTitle           String    @unique
+  stock               Int       @default(1)
+  author              String
+  ISBN                String?
+  publisher           String?
+  publishDate         DateTime?
+  language            String?
+  coverImage          String?
+  note                String?
+  bookInfoAccessLevel Int       @default(10)
+
+  bookCategoryId String       @db.ObjectId
+  bookCategory   BookCategory @relation(fields: [bookCategoryId], references: [id])
+
+  ReservationDetail ReservationDetail[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ReservationStatus {
+  id                           String            @id @default(auto()) @map("_id") @db.ObjectId
+  reservationStatusName        String            @unique
+  reservationStatusNum         Int               @unique
+  reservationStatusDescription String?
+  reservationStatusAccessLevel Int               @default(10)
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @updatedAt
+  BookReservations             BookReservation[]
+}
+
+model BookReservation {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  reservationRef         String   @unique
+  reservationDate        DateTime
+  reservationAccessLevel Int      @default(10)
+  reservationComment     String?
+
+  reservationStatusNum Int               @default(1)
+  reservationStatus    ReservationStatus @relation(fields: [reservationStatusNum], references: [reservationStatusNum])
+
+  userId String @db.ObjectId
+  user   User?  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reservationDetails ReservationDetail[]
+}
+
+model ReservationDetail {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  quantity Int     @default(1)
+  note     String?
+
+  bookReservationId String          @db.ObjectId
+  bookReservation   BookReservation @relation(fields: [bookReservationId], references: [id], onDelete: Cascade)
+
+  bookInfoId String   @db.ObjectId
+  bookInfo   BookInfo @relation(fields: [bookInfoId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Eache ReservationDetal should keep unique book of a BookReservation, not multiple times for a book
+  @@unique([bookReservationId, bookInfoId], name: "unique_reservation_book")
+}
+
+// After any change here, need to run => npx prisma generate
+//npx prisma db push
