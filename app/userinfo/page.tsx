@@ -199,6 +199,8 @@ const Page: React.FC = () => {
                 id: id,
                 name: editedTextValue[id]?.txtName?.trim(),
                 email: editedTextValue[id]?.txtEmail?.trim(),
+                phone: editedTextValue[id]?.txtPhone?.trim(),
+                address: editedTextValue[id]?.txtAddress?.trim()
             });
 
             const response = await fetch(endpoint, {
@@ -219,6 +221,8 @@ const Page: React.FC = () => {
                                 ...userInfo,
                                 name: editedTextValue[id]?.txtName?.trim() || userInfo.name,
                                 email: editedTextValue[id]?.txtEmail?.trim() || userInfo.email,
+                                phone: editedTextValue[id]?.txtPhone?.trim() || userInfo.phone,
+                                address: editedTextValue[id]?.txtAddress?.trim() || userInfo.address
                             };
                         }
                         return userInfo;
@@ -373,6 +377,8 @@ const Page: React.FC = () => {
     // Function to handle changes in the text input fields for editing
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement> | React.ChangeEvent<HTMLSelectElement>, id: string) => {
         const { name, value } = e.target;
+        console.log("🚀 ~ file: page.tsx:380 ~ handleTextChange ~ value:", value)
+        console.log("🚀 ~ file: page.tsx:380 ~ handleTextChange ~ name:", name)
 
         setEditedTextValue((prevEditedTextState: IEditedTextValue) => ({
             ...prevEditedTextState,
@@ -428,9 +434,13 @@ const Page: React.FC = () => {
     const handleCancelEditButtonClick = async (id: string) => {
         const name = data.userInfos.find((userInfo: any) => userInfo.id === id)?.name || '';
         const email = data.userInfos.find((userInfo: any) => userInfo.id === id)?.email || '';
+        const phone = data.userInfos.find((userInfo: any) => userInfo.id === id)?.phone || '';
+        const address = data.userInfos.find((userInfo: any) => userInfo.id === id)?.address || '';
 
         if (editedTextValue[id]?.txtName?.trim() !== name?.trim()
-            || editedTextValue[id]?.txtEmail?.trim() !== email?.trim()) {
+            || editedTextValue[id]?.txtEmail?.trim() !== email?.trim()
+            || editedTextValue[id]?.txtPhone?.trim() !== phone?.trim()
+            || editedTextValue[id]?.txtAddress?.trim() !== address?.trim()) {
             const result = await Swal.fire({
                 title: "Are you sure?",
                 text: "You want to cancel the editing!",
@@ -577,7 +587,8 @@ const Page: React.FC = () => {
     const filteredUserInfos = Array.isArray(data.userInfos) && data.userInfos.length > 0
         ? data.userInfos.filter((userInfo: User) =>
             userInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            userInfo.email?.toLowerCase().includes(searchQuery.toLowerCase())
+            userInfo.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            userInfo.phone?.toLowerCase().includes(searchQuery.toLowerCase())
         )
         : [];
 
@@ -601,7 +612,15 @@ const Page: React.FC = () => {
             if (emailA < emailB) return -1 * factor;
             if (emailA > emailB) return 1 * factor;
             return 0;
-        } else {
+        } else if (sortBy === 'phone') {
+            // Sort by phone
+            const phoneA = (a.phone ?? '').toLowerCase();
+            const phoneB = (b.phone ?? '').toLowerCase();
+            if (phoneA < phoneB) return -1 * factor;
+            if (phoneA > phoneB) return 1 * factor;
+            return 0;
+        } 
+        else {
             // Default sorting behavior
             return 0;
         }
@@ -880,7 +899,7 @@ const Page: React.FC = () => {
                                                     <td className="py-2 px-4 border-b border-r" style={{ maxWidth: '400px', maxHeight: '100px' }}>
                                                         {showHideEditableRow[userInfo.id] ? (
                                                             <textarea
-                                                                name="txtEmail"
+                                                                name="txtAddress"
                                                                 title={`Edit ${userInfo?.addresses[0]?.street}`}
                                                                 value={editedTextValue[userInfo.id]?.txtAddress || userInfo && userInfo.addresses && userInfo.addresses.length > 0 ? userInfo.addresses[0].street : ''}
                                                                 onChange={(e) => handleTextChange(e, userInfo.id)}
@@ -901,9 +920,9 @@ const Page: React.FC = () => {
                                                         {showHideEditableRow[userInfo.id] ? (
                                                             <select
                                                                 name="cboUserRole"
-                                                                title={`Edit ${userInfo.userRole.roleName}`}
-                                                                value={editedTextValue[userInfo.id]?.cboUserRole || userInfo.userRole.roleSerial}
-                                                                onChange={(e) => handleTextChange(e, userInfo.id)}
+                                                                title={`Edit ${userInfo?.userRole?.roleName}`}
+                                                                value={editedTextValue[userInfo?.id]?.cboUserRole || userInfo?.userRole?.roleSerial}
+                                                                onChange={(e) => handleTextChange(e, userInfo?.id)}
                                                                 className="border p-2 rounded-md w-full"
                                                             >
                                                                 {Array.isArray(dataUserRole.userRoles) &&
